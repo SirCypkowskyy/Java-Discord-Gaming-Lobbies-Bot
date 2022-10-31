@@ -1,3 +1,5 @@
+# ENV files
+.env
 # Compiled class file
 *.class
 
