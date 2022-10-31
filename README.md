@@ -44,8 +44,15 @@ DEBUG_MODE=[check if you want to run the bot in debug mode]
 - Run the `Main.java` file
 - Enjoy!
 
+## How to create lobby
+- Register the server to the bot (if you're the server admin) with `/register-server` command
+- Register yourself to the bot with `/register-to-bot` command
+- Create a lobby with `/create-lobby` command
+- Lobby will be deleted when the host leaves it
+
 ## Planned features
 - Fix minor and major bugs
+- Automatically delete lobbies after a certain amount of time (if host won't join it in time) 
 - Add more commands
 - Web dashboard for your profile and server settings (with Discord OAuth2)
 - Add more features to the bot
