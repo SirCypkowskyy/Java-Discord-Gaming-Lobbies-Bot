@@ -3,6 +3,8 @@
     <img src="https://media.discordapp.net/attachments/1036622997865381959/1036623048842944553/Gaming_Lobbies_Bot-logos_transparent.png?width=662&height=662" width="200">
 </p>
 
+[Invitation Link](https://discord.com/api/oauth2/authorize?client_id=1013486009612255263&permissions=8&scope=bot%20applications.commands)
+
 ***Gaming Lobbies Bot*** is a bot written in Java, based on the JDA framework, to facilitate the process of creating temporary gaming lobbies on Discord servers through a dedicated system.
 
 Bot is currently in development, and is not yet ready for public use.
