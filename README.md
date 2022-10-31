@@ -57,5 +57,9 @@ DEBUG_MODE=[check if you want to run the bot in debug mode]
 - Create a pull request
 - Wait for the review
 
+Alternatively, you can create an issue with a feature request or a bug report on the issues page or our Discord community server.
+
+Server link: https://discord.gg/PfbF3x87js
+
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details
