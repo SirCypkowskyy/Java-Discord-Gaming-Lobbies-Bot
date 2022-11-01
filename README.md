@@ -34,6 +34,18 @@ Mongodb is used to store data, and the bot will (most likely) be hosted on a VPS
 - `/remove-activity` - to remove an activity from your followed activities list
 
 ## How to run
+
+### Docker
+
+ 1. Clone repo
+ 2. Copy `.example.env` to `.env` and update credentials
+ 3. docker compose build
+ 4. docker compose pull
+ 5. docker compose up -d
+
+*To update bot, pull changes from git repo, then follow points 3, 4 and 5.*
+
+### Bare metal
 - Clone the repository
 - Create a file named `.env` in the root directory of the project
 - Add the following lines to the `.env` file:

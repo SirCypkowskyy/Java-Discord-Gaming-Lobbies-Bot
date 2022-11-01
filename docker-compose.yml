@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  bot:
+    build:
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      MONGO_URL: 'mongodb://db/bot'
+    env_file:
+      - .env
+  db:
+    image: mongo:6
+    restart: unless-stopped
+    volumes:
+      - ./.docker/mongo/db:/data/db
