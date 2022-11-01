@@ -1,14 +1,12 @@
-FROM maven:3-amazoncorretto-17 AS builder
+FROM gradle:jdk17
 
-WORKDIR /build
+WORKDIR /app
 
-COPY ./src /build/src
-COPY ./pom.xml /build
+COPY ./src /app/src
+COPY ./gradle /app/gradle
+COPY ./build.gradle.kts .
+COPY ./settings.gradle.kts .
 
-RUN mvn -f /build/pom.xml clean package
+RUN gradle build
 
-FROM amazoncorretto:17 AS runner
-
-COPY --from=builder /build/target/bot.jar /app/bot.jar
-
-ENTRYPOINT ["java", "-jar", "/app/bot.jar"]
+CMD ["gradle", ":run"]

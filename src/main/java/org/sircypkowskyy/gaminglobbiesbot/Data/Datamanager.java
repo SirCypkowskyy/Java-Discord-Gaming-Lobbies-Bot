@@ -1,9 +1,7 @@
 package org.sircypkowskyy.gaminglobbiesbot.Data;
 
 import com.mongodb.BasicDBObject;
-import com.mongodb.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.*;
 import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import org.bson.Document;
@@ -34,7 +32,7 @@ public class Datamanager extends Thread {
     }
     private void connectClient() {
         var dotenv = Dotenv.configure().load();
-        mongoClient = new MongoClient(dotenv.get("MONGO_URL"));
+        mongoClient = MongoClients.create(dotenv.get("MONGO_URL", "mongodb://localhost/app"));
         // Check if connection is successful
         System.out.println("Connected to MongoDB!\nGetting all databases...");
     }

@@ -32,7 +32,7 @@ public class Main {
         var dotenv = Dotenv.configure().load();
         var token = dotenv.get("BOT_TOKEN");
         defaultBotPrefix = dotenv.get("BOT_PREFIX");
-        isInDebugMode = dotenv.get("DEBUG_MODE").equals("true");
+        isInDebugMode = dotenv.get("DEBUG_MODE", "false").equals("true");
         init(token);
         dataManager = new Datamanager();
         dataManager.start();
