@@ -4,6 +4,7 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import org.bson.Document;
 import org.sircypkowskyy.gaminglobbiesbot.Data.Models.LobbyModel;
@@ -32,7 +33,8 @@ public class Datamanager extends Thread {
         populateDatabase();
     }
     private void connectClient() {
-        mongoClient = new MongoClient("localhost", 27017);
+        var dotenv = Dotenv.configure().load();
+        mongoClient = new MongoClient(dotenv.get("MONGO_URL"));
         // Check if connection is successful
         System.out.println("Connected to MongoDB!\nGetting all databases...");
     }
