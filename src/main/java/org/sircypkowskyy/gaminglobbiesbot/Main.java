@@ -46,7 +46,7 @@ public class Main {
                         ).orElseThrow(
                                 () -> new Exception("No bot token found")
                         ))
-                .setActivity(Activity.playing("Managing Discord gaming lobbies..."))
+                .setActivity(Activity.playing("Managing Discord gaming lobbies since 1984"))
                 .enableIntents(GatewayIntent.MESSAGE_CONTENT)
                 .enableIntents(GatewayIntent.GUILD_MEMBERS)
                 .enableIntents(GatewayIntent.GUILD_PRESENCES)
