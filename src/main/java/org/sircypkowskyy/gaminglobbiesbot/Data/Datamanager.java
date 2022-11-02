@@ -31,7 +31,7 @@ public class Datamanager extends Thread {
         populateDatabase();
     }
     private void connectClient() {
-        var dotenv = Dotenv.configure().load();
+        var dotenv = Dotenv.configure().ignoreIfMissing().load();
         mongoClient = MongoClients.create(dotenv.get("MONGO_URL", "mongodb://localhost/app"));
         // Check if connection is successful
         System.out.println("Connected to MongoDB!\nGetting all databases...");

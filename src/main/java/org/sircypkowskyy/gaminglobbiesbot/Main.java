@@ -29,7 +29,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         // Read .env file
-        var dotenv = Dotenv.configure().load();
+        var dotenv = Dotenv.configure().ignoreIfMissing().load();
         var token = dotenv.get("BOT_TOKEN");
         defaultBotPrefix = dotenv.get("BOT_PREFIX");
         isInDebugMode = dotenv.get("DEBUG_MODE", "false").equals("true");
