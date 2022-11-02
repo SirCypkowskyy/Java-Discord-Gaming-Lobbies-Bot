@@ -39,9 +39,9 @@ Mongodb is used to store data, and the bot will (most likely) be hosted on a VPS
 
  1. Clone repo
  2. Copy `.example.env` to `.env` and update credentials
- 3. docker compose build
- 4. docker compose pull
- 5. docker compose up -d
+ 3. Run `docker compose build`
+ 4. Run `docker compose pull`
+ 5. Run `docker compose up -d`
 
 *To update bot, pull changes from git repo, then follow points 3, 4 and 5.*
 
@@ -83,4 +83,4 @@ Alternatively, you can create an issue with a feature request or a bug report on
 Server link: https://discord.gg/PfbF3x87js
 
 ## License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
