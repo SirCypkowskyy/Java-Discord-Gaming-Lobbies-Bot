@@ -137,6 +137,12 @@ public class Datamanager extends Thread {
         return userExists != null;
     }
 
+    public boolean doesUserHasRegisteredLobby(long userID) {
+        var lobby = new BasicDBObject("lobbyUserOwnerId", userID);
+        var lobbyExists = lobbiesCollection.find(lobby).first();
+        return lobbyExists != null;
+    }
+
     public boolean doesUserHaveActivity(long userID, long activityID) {
         var user = new BasicDBObject("userId", userID);
         var userExists = usersCollection.find(user).first();

@@ -14,6 +14,7 @@ public class EventHandlers extends ListenerAdapter {
     public void onGuildVoiceLeave(@NotNull GuildVoiceLeaveEvent event) {
         List<Document> lobbies = Main.dataManager.getLobbies().find().into(new ArrayList<>());
         var lobby = lobbies.stream().filter(x -> x.getLong("lobbyChannelId") == event.getChannelLeft().getIdLong()).findFirst();
+
         if(lobby.isEmpty())
             return;
 

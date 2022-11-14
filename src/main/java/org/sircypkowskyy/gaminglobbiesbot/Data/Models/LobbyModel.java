@@ -4,30 +4,53 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.Document;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.Date;
+
 public class LobbyModel {
     public long lobbyChannelId;
+    public long lobbyGuildId;
     public long lobbyUserOwnerId;
     public long lobbyActivityId;
     public int lobbyMaxPlayers;
+    public Date lobbyCreated;
 
-    public LobbyModel(long lobbyChannelId, long lobbyUserOwnerId, long lobbyActivityId, int lobbyMaxPlayers) {
+    public LobbyModel(long lobbyChannelId, long lobbyGuildId, long lobbyUserOwnerId, long lobbyActivityId, int lobbyMaxPlayers, Date lobbyCreated) {
         this.lobbyChannelId = lobbyChannelId;
+        this.lobbyGuildId = lobbyGuildId;
         this.lobbyUserOwnerId = lobbyUserOwnerId;
         this.lobbyActivityId = lobbyActivityId;
         this.lobbyMaxPlayers = lobbyMaxPlayers;
+        this.lobbyCreated = lobbyCreated;
     }
 
     public static DBObject toDBObject(LobbyModel lobbyModel) {
         return new BasicDBObject("lobbyChannelId", lobbyModel.lobbyChannelId)
+                .append("lobbyGuildId", lobbyModel.lobbyGuildId)
                 .append("lobbyUserOwnerId", lobbyModel.lobbyUserOwnerId)
                 .append("lobbyActivityId", lobbyModel.lobbyActivityId)
-                .append("lobbyMaxPlayers", lobbyModel.lobbyMaxPlayers);
+                .append("lobbyMaxPlayers", lobbyModel.lobbyMaxPlayers)
+                .append("lobbyCreated", lobbyModel.lobbyCreated);
     }
 
     public static Document toDocument(LobbyModel lobbyModel) {
         return new Document("lobbyChannelId", lobbyModel.lobbyChannelId)
+                .append("lobbyGuildId", lobbyModel.lobbyGuildId)
                 .append("lobbyUserOwnerId", lobbyModel.lobbyUserOwnerId)
                 .append("lobbyActivityId", lobbyModel.lobbyActivityId)
-                .append("lobbyMaxPlayers", lobbyModel.lobbyMaxPlayers);
+                .append("lobbyMaxPlayers", lobbyModel.lobbyMaxPlayers)
+                .append("lobbyCreated", lobbyModel.lobbyCreated);
+    }
+
+    public static LobbyModel fromDocument(Document document) {
+        return new LobbyModel(
+                document.getLong("lobbyChannelId"),
+                document.getLong("lobbyGuildId"),
+                document.getLong("lobbyUserOwnerId"),
+                document.getLong("lobbyActivityId"),
+                document.getInteger("lobbyMaxPlayers"),
+                document.getDate("lobbyCreated")
+        );
     }
 }

@@ -14,16 +14,17 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
-
     private static JDA bot;
     public static Datamanager dataManager;
-
     private static boolean isInDebugMode = false;
     public static String defaultBotPrefix;
 
@@ -37,7 +38,23 @@ public class Main {
         dataManager = new Datamanager();
         dataManager.start();
 
+        var timer = new Timer();
+        var asyncActions = new ArrayList<Thread>();
 
+        // Check if lobbies should be destroyed after not being used for more than 1 minute by the owner
+        asyncActions.add(new Thread(Main::checkLobbiesValidity));
+
+        // Start async actions
+        for (var action : asyncActions) {
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    action.run();
+                }
+            }, 30*1000, 60*(1000));
+        }
+
+        // threadPool.scheduleWithFixedDelay(Main::checkLobbiesValidity, 1, 30, TimeUnit.SECONDS);
     }
 
     private static void init(String token) throws Exception {
@@ -105,7 +122,7 @@ public class Main {
         commandData.add(Commands
                 .slash("register-server", "Register your server to bot service")
                 .addOption(OptionType.CHANNEL, "category", "The category where the lobbies will be created", true)
-                .addOption(OptionType.CHANNEL, "info-channel", "The channel where the new lobby info will be sent", false)
+                .addOption(OptionType.CHANNEL, "info-channel", "The channel where the new lobby info will be sent", true)
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.ADMINISTRATOR))
         );
 
@@ -128,6 +145,35 @@ public class Main {
         );
 
         bot.updateCommands().addCommands(commandData).queue();
+    }
+
+    /**
+     * Checks if the lobbies are not empty every x seconds,
+     * if they are empty, they are deleted (ignores lobbies that exist less than 1 minute)
+     */
+    private static void checkLobbiesValidity() {
+        var lobbies = dataManager.getLobbies().find().into(new ArrayList<>());
+        if(lobbies.isEmpty()) return;
+
+        System.out.println("Checking lobbies validity...");
+
+        for (var lobby : lobbies) {
+            // check only lobbies which were created more than 1 minute ago
+            if(ChronoUnit.MINUTES.between(lobby.getDate("lobbyCreated").toInstant(), new Date().toInstant()) > 1) {
+                var guild = bot.getGuildById(lobby.getString("lobbyGuildId"));
+                if(guild != null) {
+                    var lobbyChannel = guild.getVoiceChannelById(lobby.getString("lobbyChannelId"));
+                    if(lobbyChannel != null)
+                    {
+                        if(lobbyChannel.getMembers().isEmpty()) {
+                            lobbyChannel.delete().queue();
+                            dataManager.getLobbies().deleteOne(lobby);
+                        }
+                    }
+                }
+
+            }
+        }
     }
 
     public static boolean getIsInDebugMode() {
