@@ -44,12 +44,14 @@ public class Main {
         // Check if lobbies should be destroyed after not being used for more than 1 minute by the owner
         asyncActions.add(new Thread(Main::checkLobbiesValidity));
 
+        // TODO: FIX ASYNC ACTIONS NOT WORKING!
+
         // Start async actions
         for (var action : asyncActions) {
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    action.run();
+                    action.start();
                 }
             }, 30*1000, 60*(1000));
         }
@@ -155,7 +157,6 @@ public class Main {
         var lobbies = dataManager.getLobbies().find().into(new ArrayList<>());
         if(lobbies.isEmpty()) return;
 
-        System.out.println("Checking lobbies validity...");
 
         for (var lobby : lobbies) {
             // check only lobbies which were created more than 1 minute ago
