@@ -18,7 +18,6 @@ import net.dv8tion.jda.api.interactions.components.selections.SelectMenu;
 import net.dv8tion.jda.api.interactions.components.text.TextInput;
 import net.dv8tion.jda.api.interactions.components.text.TextInputStyle;
 import org.jetbrains.annotations.NotNull;
-import org.sircypkowskyy.gaminglobbiesbot.Data.Datamanager;
 import org.sircypkowskyy.gaminglobbiesbot.Data.Models.LobbyModel;
 import org.sircypkowskyy.gaminglobbiesbot.Data.Models.ServerModel;
 
@@ -29,8 +28,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class Commands extends ListenerAdapter {
 
@@ -147,8 +147,10 @@ public class Commands extends ListenerAdapter {
         // check if user is the owner of the lobby
         var lobbyModel = Main.dataManager.getLobbies().find().into(new ArrayList<>());
         var potentialLobby = lobbyModel.stream().filter(x -> x.getLong("lobbyChannelId") == lobbyId).findFirst().orElse(null);
-        if(potentialLobby != null) {
-            event.reply("You are the owner of this lobby\nYou can't join your own lobby again!").setEphemeral(true).queue();
+        if(potentialLobby != null && potentialLobby.getLong("lobbyUserOwnerId") == user.getIdLong()) {
+            event.reply("You are the owner of this lobby\nYou can't join your own lobby again!").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
 
@@ -156,7 +158,9 @@ public class Commands extends ListenerAdapter {
             var lobbyManager = lobby.getManager();
             lobbyManager.putPermissionOverride(Objects.requireNonNull(event.getMember()), EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), EnumSet.of(Permission.VOICE_MOVE_OTHERS)).queue();
         }
-        event.deferReply().queue();
+        event.reply("You have joined the lobby successfully").setEphemeral(true).queue(
+                message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+        );
     }
 
     private void handleButtonLeaveLobby(@NotNull ButtonInteractionEvent event, long lobbyId) {
@@ -166,11 +170,20 @@ public class Commands extends ListenerAdapter {
         if(lobby != null) {
             var lobbies = Main.dataManager.getLobbies();
             var potentialLobby = lobbies.find().into(new ArrayList<>()).stream().filter(x -> x.getLong("lobbyChannelId") == lobbyId).findFirst().orElse(null);
-            if(potentialLobby != null) {
-                lobbies.deleteOne(potentialLobby);
+            if(potentialLobby != null && potentialLobby.getLong("lobbyUserOwnerId") == user.getIdLong() ) {
+                try {
+                    event.getChannel().retrieveMessageById(potentialLobby.getLong("lobbyInfoMessageId")).queue(x -> {
+                        x.delete().queue();
+                    });
+                }
+                catch (Exception ignored) {
+                    System.out.println("Info message not found!");
+                }
                 lobby.delete().queue();
-                event.getMessage().delete().queue();
-                event.reply("Lobby deleted!").setEphemeral(true).queue();
+                event.reply("Lobby deleted!").setEphemeral(true).queue(
+                        message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                );
+                lobbies.deleteOne(potentialLobby);
                 actionReplied = true;
             }
             else {
@@ -180,14 +193,18 @@ public class Commands extends ListenerAdapter {
 
         }
         if(!actionReplied)
-            event.deferReply().queue();
+            event.reply("You have left the lobby successfully").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
     }
 
     private void removeActivity(@NotNull SlashCommandInteractionEvent event) {
         // Check if user exists in database
         if(!Main.dataManager.doesUserExist(event.getUser().getIdLong()))
         {
-            event.reply("You are not registered to bot. Use /register-to-bot to register").setEphemeral(true).queue();
+            event.reply("You are not registered to bot. Use `/register-to-bot` to register").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
         var selectMenu = SelectMenu.create("select-activity-to-remove").setRequiredRange(1, 1);
@@ -200,7 +217,9 @@ public class Commands extends ListenerAdapter {
         event.reply("Select activity you want to want to unfollow")
                 .addActionRow(selectMenu.build())
                 .setEphemeral(true)
-                .queue();
+                .queue(
+                        message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                );
     }
 
     private void removeActivityFromUser(@NotNull SelectMenuInteractionEvent event) {
@@ -208,18 +227,24 @@ public class Commands extends ListenerAdapter {
         var activity = event.getMember().getActivities().stream().filter(x -> x.getName().equals(activityName)).findFirst().orElse(null);
         if(activity == null)
         {
-            event.reply("You don't follow this activity").setEphemeral(true).queue();
+            event.reply("You don't follow this activity").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
         Main.dataManager.unregisterUserActivity(event.getUser().getIdLong(), activity.asRichPresence().getApplicationIdLong());
-        event.reply("You unfollowed " + activity.getName() + " activity.").setEphemeral(true).queue();
+        event.reply("You unfollowed " + activity.getName() + " activity.").setEphemeral(true).queue(
+                message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+        );
     }
 
     private void addActivity(@NotNull SlashCommandInteractionEvent event) {
         // Check if user exists in database
         if(!Main.dataManager.doesUserExist(event.getUser().getIdLong()))
         {
-            event.reply("You are not registered to bot. Use /register-to-bot to register").setEphemeral(true).queue();
+            event.reply("You are not registered to bot. Use /register-to-bot to register").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
         var selectMenu = SelectMenu.create("select-activity-to-add").setRequiredRange(1, 1);
@@ -232,7 +257,9 @@ public class Commands extends ListenerAdapter {
         event.reply("Select activity you want to want to follow")
                 .addActionRow(selectMenu.build())
                 .setEphemeral(true)
-                .queue();
+                .queue(
+                        message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                );
     }
 
     private void addActivityToUser(@NotNull SelectMenuInteractionEvent event) {
@@ -240,16 +267,22 @@ public class Commands extends ListenerAdapter {
         var activity = event.getMember().getActivities().stream().filter(x -> x.getName().equals(activityName)).findFirst().orElse(null);
         if(activity == null)
         {
-            event.reply("Activity not found").setEphemeral(true).queue();
+            event.reply("Activity not found").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
         var activityId = activity.asRichPresence().getApplicationIdLong();
         if(!Main.dataManager.doesUserHaveActivity(event.getUser().getIdLong(),activityId))
         {
             Main.dataManager.registerNewUserActivity(event.getUser().getIdLong(), activityId);
-            event.reply("Activity added").setEphemeral(true).queue();
+            event.reply("Activity added").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
         } else {
-            event.reply("You already follow this activity").setEphemeral(true).queue();
+            event.reply("You already follow this activity").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
         }
     }
 
@@ -257,7 +290,9 @@ public class Commands extends ListenerAdapter {
 
         if(Main.dataManager.getGuildSettings(event.getGuild().getIdLong()) != null)
         {
-            event.reply("This server is already registered").setEphemeral(true).queue();
+            event.reply("This server is already registered").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
 
@@ -266,7 +301,9 @@ public class Commands extends ListenerAdapter {
 
         if(event.getGuild().getCategoryById(category) == null)
         {
-            event.reply("**ERROR!**\nYou chose normal channel instead of channels Category for temporary server lobbies!").setEphemeral(true).queue();
+            event.reply("**ERROR!**\nYou chose normal channel instead of channels Category for temporary server lobbies!").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
         long infoChannelID = 0;
@@ -275,12 +312,16 @@ public class Commands extends ListenerAdapter {
             infoChannelID = event.getOption("info-channel").getAsChannel().getIdLong();
             if(event.getGuild().getTextChannelById(infoChannelID) == null)
             {
-                event.reply("**ERROR!**\nYou chose different channel instead of Text Channel for new lobbies on server info channel!").setEphemeral(true).queue();
+                event.reply("**ERROR!**\nYou chose different channel instead of Text Channel for new lobbies on server info channel!").setEphemeral(true).queue(
+                        message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                );
                 return;
             }
         }
         Main.dataManager.registerServer(serverId, category, infoChannelID);
-        event.reply("Server registered").setEphemeral(true).queue();
+        event.reply("Server registered").setEphemeral(true).queue(
+                message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+        );
     }
 
     private void showServerSettings(@NotNull SlashCommandInteractionEvent event) {
@@ -288,7 +329,9 @@ public class Commands extends ListenerAdapter {
 
         if(guildSettings == null)
         {
-            event.reply("This server is not registered to the bot").setEphemeral(true).queue();
+            event.reply("This server is not registered to the bot").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
         event.replyEmbeds(
@@ -329,15 +372,21 @@ public class Commands extends ListenerAdapter {
             }
             System.out.println("Deleted all lobbies from server " + event.getGuild().getName());
 
-            event.reply("Server unregistered").setEphemeral(true).queue();
+            event.reply("Server unregistered").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
         } else {
-            event.reply("You don't have permission to do that").setEphemeral(true).queue();
+            event.reply("You don't have permission to do that").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
         }
     }
 
     private void unregisterFromBot(@NotNull SlashCommandInteractionEvent event) {
         Main.dataManager.unregisterUser(event.getUser().getIdLong());
-        event.reply("You have been unregistered from the bot").setEphemeral(true).queue();
+        event.reply("You have been unregistered from the bot").setEphemeral(true).queue(
+                message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+        );
     }
 
 
@@ -355,7 +404,9 @@ public class Commands extends ListenerAdapter {
         // check if lobbiesCategory is a category
         if(event.getGuild().getCategoryById(lobbiesCategory) == null)
         {
-            event.reply("Lobbies category must be a category!").setEphemeral(true).queue();
+            event.reply("Lobbies category must be a category!").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
 
@@ -364,26 +415,36 @@ public class Commands extends ListenerAdapter {
             lobbiesAnnouncementChannel = event.getOption("info-channel").getAsChannel().getIdLong();
             if(event.getGuild().getTextChannelById(lobbiesAnnouncementChannel) == null)
             {
-                event.reply("Lobbies announcement channel must be a text channel!").setEphemeral(true).queue();
+                event.reply("Lobbies announcement channel must be a text channel!").setEphemeral(true).queue(
+                        message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                );
                 return;
             }
         }
 
         Main.dataManager.modifyGuildSettings(new ServerModel(guildId, guildPrefix, lobbiesCategory, lobbiesAnnouncementChannel));
-        event.reply("Server settings changed").setEphemeral(true).queue();
+        event.reply("Server settings changed").setEphemeral(true).queue(
+                message -> {
+                    message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS);
+                }
+        );
     }
 
     private void createLobby(@NotNull SlashCommandInteractionEvent event) {
 
         if(!Main.dataManager.doesUserExist(event.getUser().getIdLong()))
         {
-            event.reply("You are not registered to the bot!\nRegister first to create lobbies!").setEphemeral(true).queue();
+            event.reply("You are not registered to the bot!\nRegister first to create lobbies!").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+            );
             return;
         }
 
         if(Main.dataManager.doesUserHasRegisteredLobby(event.getUser().getIdLong()))
         {
-            event.reply("You already have a lobby!\nExit or wait for your lobby to expire in order to be able to create new lobby!").setEphemeral(true).queue();
+            event.reply("You already have a lobby!\nExit or wait for your lobby to expire in order to be able to create new lobby!").setEphemeral(true).queue(
+                    message -> message.deleteOriginal().queueAfter(20, TimeUnit.SECONDS)
+            );
             return;
         }
 
@@ -391,20 +452,27 @@ public class Commands extends ListenerAdapter {
         var guildSettings = Main.dataManager.getGuildSettings(guildId);
         if(guildSettings != null) {
             if(guildSettings.guildLobbiesCategoryId == 0) {
-                event.reply("This server is not setup for this bot yet!\nServer needs to be registered").setEphemeral(true).queue();
+                event.reply("This server is not setup for this bot yet!\nServer needs to be registered").setEphemeral(true).queue(
+                        message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                );
                 return;
             }
-
             // try to get category and new lobbies info channel
             var category = event.getGuild().getCategoryById(guildSettings.guildLobbiesCategoryId);
             if(category == null) {
-                event.reply("Lobbies category is not set or was deleted!").setEphemeral(true).queue();
+                event.reply("Lobbies category is not set or was deleted!").setEphemeral(true).queue(
+                        message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                );
                 return;
             }
 
             var infoChannel = event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId);
             if(infoChannel == null) {
-                event.reply("Lobbies info channel is not set or was deleted!").setEphemeral(true).queue();
+                event.reply("Lobbies info channel is not set or was deleted!").setEphemeral(true).queue(
+                        s -> {
+                            s.deleteOriginal().queueAfter(30, TimeUnit.SECONDS);
+                        }
+                );
                 return;
             }
 
@@ -417,21 +485,31 @@ public class Commands extends ListenerAdapter {
                 event.reply("Choose activity for your lobby")
                         .addActionRow(selectMenu.build())
                         .setEphemeral(true)
-                        .queue();
+                        .queue(s ->{
+                            s.deleteOriginal().queueAfter(30, TimeUnit.SECONDS);
+                        });
             }
             else
             {
-                event.reply("You need to have at least one activity active in order to create lobby!").setEphemeral(true).queue();
+                event.reply("You need to have at least one activity active in order to create lobby!").setEphemeral(true).queue(
+                        s ->{
+                            s.deleteOriginal().queueAfter(30, TimeUnit.SECONDS);
+                        });
             }
 
         }
         else {
-            event.reply("This server is not setup for this bot yet!\nServer needs to be registered").setEphemeral(true).queue();
+            event.reply("This server is not setup for this bot yet!\nServer needs to be registered").setEphemeral(true).queue(
+                    s ->{
+                        s.deleteOriginal().queueAfter(30, TimeUnit.SECONDS);
+                    });
         }
     }
 
     // for lobbies based on discord activities
     private void registerNewLobby(@NotNull SelectMenuInteractionEvent event) {
+
+
         var chosenActivity = event.getValues().get(0);
 
         var lobbyName = TextInput.create("lobby-name", "Lobby name", TextInputStyle.SHORT)
@@ -478,6 +556,7 @@ public class Commands extends ListenerAdapter {
                 .setPlaceholder("yes/no")
                 .setRequired(true)
                 .setMaxLength(3)
+                .setMinLength(2)
                 .build();
 
         var modal = Modal.create("register-to-bot", "Register your account to bot service")
@@ -499,7 +578,7 @@ public class Commands extends ListenerAdapter {
 
         int lobbyMaxPlayers = 0;
         try {
-            lobbyMaxPlayers = Integer.parseInt(Objects.requireNonNull(event.getValue("lobby-max-players")).toString());
+            lobbyMaxPlayers = Integer.parseInt(event.getValue("lobby-max-players").getAsString());
         }
         catch (NumberFormatException ignored) {}
 
@@ -513,6 +592,7 @@ public class Commands extends ListenerAdapter {
         var activity = event.getMember().getActivities().stream().filter(a -> a.isRich() && a.asRichPresence().getApplicationIdLong() == lobbyActivityId).findFirst().orElseThrow();
 
         var botSelfAvatar = event.getJDA().getSelfUser().getAvatarUrl();
+        Long messageID = null;
         String messageLink = null;
         if(guildSettings.guildLobbyInfoChannelId != 0) {
             var lobbyInfoEmbed = new EmbedBuilder()
@@ -528,17 +608,26 @@ public class Commands extends ListenerAdapter {
                     .addField("Lobby Host", "<@" + event.getMember().getId() + ">", false)
                     .addField("Max players", lobbyMaxPlayers == 0 ? "No limits" : Integer.toString(lobbyMaxPlayers), false)
                     .setColor(Color.RED);
+            int finalLobbyMaxPlayers = lobbyMaxPlayers;
             event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).sendMessageEmbeds(lobbyInfoEmbed.build())
                     .setActionRows(ActionRow.of(Button.primary("join-lobby-" + newChannel.getId(), "Join lobby")), ActionRow.of(Button.danger("leave-lobby-" + newChannel.getId(), "Leave lobby")))
-                    .queue();
+                    .queue(
+                            message -> {
+                                var newLobby = new LobbyModel(newChannel.getIdLong(),
+                                        event.getGuild().getIdLong(),
+                                        event.getMember().getIdLong(),
+                                        lobbyActivityId,
+                                        finalLobbyMaxPlayers,
+                                        new Date(),
+                                        message.getIdLong(),
+                                        event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).getIdLong()
+                                );
+                                registerNewLobby(newLobby);
+                            }
+                    );
             messageLink = event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).getLatestMessageId();
             messageLink = "https://discord.com/channels/" + event.getGuild().getId() + "/" + guildSettings.guildLobbyInfoChannelId + "/" + messageLink;
         }
-
-
-        var newLobby = new LobbyModel(newChannel.getIdLong(), event.getGuild().getIdLong() , event.getMember().getIdLong(), lobbyActivityId, lobbyMaxPlayers, new Date());
-
-        Main.dataManager.registerNewLobby(newLobby);
 
         var usersOnServer = event.getGuild().getMembers();
 
@@ -548,7 +637,7 @@ public class Commands extends ListenerAdapter {
         {
             var embed = new EmbedBuilder()
                     .setTitle("New " + activity.getName() +" lobby on " + event.getGuild().getName() + " server!")
-                    .setDescription("New lobby has been created on " + event.getGuild().getName() + " by " + event.getMember().getUser().getAsTag() + "!")
+                    .setDescription("New lobby has been created on " + event.getGuild().getName() + " by " + "<@" + event.getMember().getId() + ">" + "!")
                     .setColor(Color.RED)
                     .setThumbnail(activity.asRichPresence().getLargeImage() == null ? (activity.asRichPresence().getSmallImage() == null ? botSelfAvatar : activity.asRichPresence().getSmallImage().getUrl()) : activity.asRichPresence().getLargeImage().getUrl())
                     .setTimestamp(Instant.now())
@@ -564,21 +653,33 @@ public class Commands extends ListenerAdapter {
                 {
                     var userOnServer = usersOnServer.stream().filter(m -> m.getIdLong() == user.userId).findFirst().orElse(null);
                         userOnServer.getUser().openPrivateChannel().queue(c -> c.sendMessageEmbeds(embed)
-                                .queue());
+                                .queue(
+                                        message -> message.delete().queueAfter(3, TimeUnit.HOURS)
+                                ));
                         if(messageLink != null)
                         {
                             String finalMessageLink = messageLink;
                             userOnServer.getUser().openPrivateChannel().queue(c -> c.sendMessage(finalMessageLink)
-                                    .queue());
+                                    .queue(
+                                            message -> message.delete().queueAfter(3, TimeUnit.HOURS)
+                                    ));
                         }
                         // userOnServer.getUser().openPrivateChannel().queue(c -> c.sendMessage("https://discord.com/channels/" + event.getGuild().getId() + "/" + newChannel.getId()).queue());
                 }
             }
         }
-        event.reply("Lobby created!").setEphemeral(true).queue();
+        event.reply("Lobby created!").setEphemeral(true).queue(
+                message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+        );
     }
 
     private void listLobbiesOnServer(@NotNull SlashCommandInteractionEvent event) {
-        event.reply("List of lobbies on this server:").setEphemeral(true).queue();
+        event.reply("List of lobbies on this server:").setEphemeral(true).queue(
+                message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+        );
+    }
+
+    private void registerNewLobby(LobbyModel newLobby) {
+        Main.dataManager.registerNewLobby(newLobby);
     }
 }

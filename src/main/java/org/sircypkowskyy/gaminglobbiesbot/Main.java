@@ -17,9 +17,7 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class Main {
 
@@ -29,6 +27,7 @@ public class Main {
     public static String defaultBotPrefix;
 
     public static void main(String[] args) throws Exception {
+
         // Read .env file
         var dotenv = Dotenv.configure().ignoreIfMissing().load();
         var token = dotenv.get("BOT_TOKEN");
@@ -37,26 +36,10 @@ public class Main {
         init(token);
         dataManager = new Datamanager();
         dataManager.start();
-
-        var timer = new Timer();
-        var asyncActions = new ArrayList<Thread>();
-
         // Check if lobbies should be destroyed after not being used for more than 1 minute by the owner
-        asyncActions.add(new Thread(Main::checkLobbiesValidity));
+        var checkLobbiesAction = new Thread(Main::checkLobbiesValidity);
+        checkLobbiesAction.start();
 
-        // TODO: FIX ASYNC ACTIONS NOT WORKING!
-
-        // Start async actions
-        for (var action : asyncActions) {
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    action.start();
-                }
-            }, 30*1000, 60*(1000));
-        }
-
-        // threadPool.scheduleWithFixedDelay(Main::checkLobbiesValidity, 1, 30, TimeUnit.SECONDS);
     }
 
     private static void init(String token) throws Exception {
@@ -154,20 +137,37 @@ public class Main {
      * if they are empty, they are deleted (ignores lobbies that exist less than 1 minute)
      */
     private static void checkLobbiesValidity() {
+        System.out.println("Starting checking lobbies thread...");
+
+        try {
+            TimeUnit.SECONDS.sleep(30);
+        }
+        catch (InterruptedException e) {
+            System.out.println("Process interrupted error");
+        }
         var lobbies = dataManager.getLobbies().find().into(new ArrayList<>());
         if(lobbies.isEmpty()) return;
 
+        System.out.println("Checking lobbies validity...");
 
         for (var lobby : lobbies) {
             // check only lobbies which were created more than 1 minute ago
             if(ChronoUnit.MINUTES.between(lobby.getDate("lobbyCreated").toInstant(), new Date().toInstant()) > 1) {
-                var guild = bot.getGuildById(lobby.getString("lobbyGuildId"));
+                var guild = bot.getGuildById(lobby.getLong("lobbyGuildId"));
                 if(guild != null) {
-                    var lobbyChannel = guild.getVoiceChannelById(lobby.getString("lobbyChannelId"));
+                    var lobbyChannel = guild.getVoiceChannelById(lobby.getLong("lobbyChannelId"));
                     if(lobbyChannel != null)
                     {
                         if(lobbyChannel.getMembers().isEmpty()) {
                             lobbyChannel.delete().queue();
+                            try {
+                                guild.getTextChannelById(lobby.getLong("lobbyInfoMessageChannelId")).retrieveMessageById(lobby.getLong("lobbyInfoMessageId")).queue(x -> {
+                                    x.delete().queue();
+                                });
+                            }
+                            catch (Exception ignored) {
+                                System.out.println("Info message not found!");
+                            }
                             dataManager.getLobbies().deleteOne(lobby);
                         }
                     }
@@ -175,6 +175,7 @@ public class Main {
 
             }
         }
+        checkLobbiesValidity();
     }
 
     public static boolean getIsInDebugMode() {

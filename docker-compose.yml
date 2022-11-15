@@ -16,3 +16,5 @@ services:
     restart: unless-stopped
     volumes:
       - ./.docker/mongo/db:/data/db
+    ports:
+      - "27017:27017"

@@ -19,6 +19,14 @@ public class EventHandlers extends ListenerAdapter {
             return;
 
         if(event.getMember().getIdLong() == lobby.get().getLong("lobbyUserOwnerId")) {
+            try {
+                event.getGuild().getTextChannelById(lobby.get().getLong("lobbyInfoMessageChannelId")).retrieveMessageById(lobby.get().getLong("lobbyInfoMessageId")).queue(x -> {
+                    x.delete().queue();
+                });
+            }
+            catch (Exception ignored) {
+                System.out.println("Info message not found!");
+            }
             Main.dataManager.getLobbies().deleteOne(lobby.get());
             if(event.getGuild().getVoiceChannelById(lobby.get().getLong("lobbyChannelId")) != null)
                 event.getGuild().getVoiceChannelById(lobby.get().getLong("lobbyChannelId")).delete().queue();
