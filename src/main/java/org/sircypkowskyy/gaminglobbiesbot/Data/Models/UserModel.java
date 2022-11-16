@@ -11,6 +11,12 @@ public class UserModel {
     public List<Long> userRegisteredActivities;
     public boolean acceptDMs;
 
+    /**
+     * UserModel object.
+     * @param userId User ID.
+     * @param userRegisteredActivities List of activities user is registered to.
+     * @param acceptDMs Whether user accepts DMs from bot.
+     */
     public UserModel(long userId, List<Long> userRegisteredActivities, boolean acceptDMs) {
         this.userId = userId;
         this.userRegisteredActivities = userRegisteredActivities;

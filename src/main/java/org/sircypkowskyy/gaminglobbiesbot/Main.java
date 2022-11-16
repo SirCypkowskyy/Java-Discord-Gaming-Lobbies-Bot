@@ -3,7 +3,7 @@ package org.sircypkowskyy.gaminglobbiesbot;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.utils.MemberCachePolicy;
 import net.dv8tion.jda.api.utils.cache.CacheFlag;
-import org.sircypkowskyy.gaminglobbiesbot.Data.Datamanager;
+import org.sircypkowskyy.gaminglobbiesbot.Data.DataManager;
 import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -14,7 +14,6 @@ import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.*;
@@ -22,7 +21,7 @@ import java.util.concurrent.*;
 public class Main {
 
     private static JDA bot;
-    public static Datamanager dataManager;
+    public static DataManager dataManager;
     private static boolean isInDebugMode = false;
     public static String defaultBotPrefix;
 
@@ -34,7 +33,7 @@ public class Main {
         defaultBotPrefix = dotenv.get("BOT_PREFIX");
         isInDebugMode = dotenv.get("DEBUG_MODE", "false").equals("true");
         init(token);
-        dataManager = new Datamanager();
+        dataManager = new DataManager();
         dataManager.start();
         // Check if lobbies should be destroyed after not being used for more than 1 minute by the owner
         var checkLobbiesAction = new Thread(Main::checkLobbiesValidity);
@@ -42,6 +41,11 @@ public class Main {
 
     }
 
+    /**
+     * Function to initialize the bot
+     * @param token The token of the bot
+     * @throws Exception If the bot could not be initialized properly
+     */
     private static void init(String token) throws Exception {
         bot = JDABuilder.createDefault(
                         Optional.ofNullable(token
@@ -61,6 +65,9 @@ public class Main {
         bot.awaitReady();
     }
 
+    /**
+     * Function to update all commands to the bot
+     */
     private static void addCommands() {
         List<CommandData> commandData = new ArrayList<>();
 
@@ -133,8 +140,8 @@ public class Main {
     }
 
     /**
-     * Checks if the lobbies are not empty every x seconds,
-     * if they are empty, they are deleted (ignores lobbies that exist less than 1 minute)
+     * Function to check if lobbies should be destroyed after not being used for more than 1 minute since creation
+     * by anyone
      */
     private static void checkLobbiesValidity() {
         System.out.println("Starting checking lobbies thread...");
@@ -178,9 +185,18 @@ public class Main {
         checkLobbiesValidity();
     }
 
+    /**
+     * Function to return info to other classes whether the bot is running in debug mode or not
+     * @return true if debug mode is on, false otherwise
+     */
     public static boolean getIsInDebugMode() {
         return isInDebugMode;
     }
+
+    /**
+     * Function to return the bot instance
+     * @return bot instance
+     */
     public static JDA getBot() {
         return bot;
     }

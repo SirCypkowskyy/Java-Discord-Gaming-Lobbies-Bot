@@ -8,6 +8,9 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Functionality for handling discord events
+ */
 public class EventHandlers extends ListenerAdapter {
 
     @Override

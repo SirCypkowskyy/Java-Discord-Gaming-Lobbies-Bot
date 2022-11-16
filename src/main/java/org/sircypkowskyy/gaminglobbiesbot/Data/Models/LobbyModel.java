@@ -4,10 +4,11 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import org.bson.Document;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 import java.util.Date;
 
+/**
+ * Model for a lobby.
+ */
 public class LobbyModel {
     public long lobbyChannelId;
     public long lobbyGuildId;
@@ -18,6 +19,17 @@ public class LobbyModel {
     public long lobbyInfoMessageId;
     public long lobbyInfoMessageChannelId;
 
+    /**
+     * Model for a lobby.
+     * @param lobbyChannelId The voice channel ID of the lobby.
+     * @param lobbyGuildId The guild ID of the lobby.
+     * @param lobbyUserOwnerId The user ID of the lobby owner.
+     * @param lobbyActivityId The activity ID of the lobby.
+     * @param lobbyMaxPlayers The maximum number of players in the lobby.
+     * @param lobbyCreated The date the lobby was created.
+     * @param lobbyInfoMessageId The message ID of the lobby info message.
+     * @param lobbyInfoMessageChannelId The channel ID of the lobby info message.
+     */
     public LobbyModel(long lobbyChannelId, long lobbyGuildId, long lobbyUserOwnerId, long lobbyActivityId, int lobbyMaxPlayers, Date lobbyCreated, long lobbyInfoMessageId, long lobbyInfoMessageChannelId) {
         this.lobbyChannelId = lobbyChannelId;
         this.lobbyGuildId = lobbyGuildId;
@@ -29,6 +41,11 @@ public class LobbyModel {
         this.lobbyInfoMessageChannelId = lobbyInfoMessageChannelId;
     }
 
+    /**
+     * Converts a LobbyModel to a DBObject.
+     * @param lobbyModel The LobbyModel to convert.
+     * @return The DBObject.
+     */
     public static DBObject toDBObject(LobbyModel lobbyModel) {
         return new BasicDBObject("lobbyChannelId", lobbyModel.lobbyChannelId)
                 .append("lobbyGuildId", lobbyModel.lobbyGuildId)
@@ -40,6 +57,11 @@ public class LobbyModel {
                 .append("lobbyInfoMessageChannelId", lobbyModel.lobbyInfoMessageChannelId);
     }
 
+    /**
+     * Converts a lobby model to a document.
+     * @param lobbyModel The lobby model to convert.
+     * @return The document.
+     */
     public static Document toDocument(LobbyModel lobbyModel) {
         return new Document("lobbyChannelId", lobbyModel.lobbyChannelId)
                 .append("lobbyGuildId", lobbyModel.lobbyGuildId)
@@ -51,6 +73,11 @@ public class LobbyModel {
                 .append("lobbyInfoMessageChannelId", lobbyModel.lobbyInfoMessageChannelId);
     }
 
+    /**
+     * Converts a document to a lobby model.
+     * @param document The document to convert.
+     * @return The lobby model.
+     */
     public static LobbyModel fromDocument(Document document) {
         return new LobbyModel(
                 document.getLong("lobbyChannelId"),

@@ -5,18 +5,18 @@
 
 ***Gaming Lobbies Bot*** is a bot written in Java, based on the JDA framework, to facilitate the process of creating temporary gaming lobbies on Discord servers through a dedicated system.
 
-Bot is currently in development, and is not yet ready for public use.
+Bot is currently in development, and is not yet ready for public use (**you can test him at the moment by joining one of the few selected servers where the bot is tested or by cloning and launching this repo by yourself).
 
-Mongodb is used to store data, and the bot will (most likely) be hosted on a VPS.
+Mongodb is used to store data, and the bot is currently hosted on a home server.
 
 ## Features
 - Create a lobby (temporary voice channel)
-- Join a lobby
-- Leave a lobby
-- Delete a lobby by leaving it when its host leaves
+- Join a lobby by clicking on an appropriate button
+- Leave a lobby by clicking on an appropriate button
+- Delete a lobby by either clicking on an appropriate button or by leaving it empty for a certain amount of time
 - List all lobbies on given server
 - Receive DM notifications when a lobby is created (with an activity you are interested in)
-- Create embeded announcements for lobbies
+- Create embedded announcements for lobbies
 
 ## Commands
 - `/ping` - to check whether the bot is online
@@ -64,10 +64,9 @@ DEBUG_MODE=[check if you want to run the bot in debug mode]
 
 ## Planned features
 - Fix minor and major bugs
-- Automatically delete lobbies after a certain amount of time (if host won't join it in time) 
 - Add more commands
-- Web dashboard for your profile and server settings (with Discord OAuth2)
-- Add more features to the bot
+- Web dashboard for your profile and server settings (with Discord OAuth2 for user authentication)
+- Add more features to the bot (suggestions are welcome)
 
 ## How to contribute
 - Fork the repository

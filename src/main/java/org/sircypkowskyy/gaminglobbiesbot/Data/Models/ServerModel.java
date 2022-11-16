@@ -10,6 +10,13 @@ public class ServerModel {
     public long guildLobbiesCategoryId;
     public long guildLobbyInfoChannelId;
 
+    /**
+     * ServerModel
+     * @param guildId Guild ID
+     * @param guildBotPrefix Guild bot prefix
+     * @param guildLobbiesCategoryId Guild lobbies category ID
+     * @param guildLobbyInfoChannelId Guild lobbies info channel ID
+     */
     public ServerModel(long guildId, String guildBotPrefix, long guildLobbiesCategoryId, long guildLobbyInfoChannelId) {
         this.guildId = guildId;
         this.guildBotPrefix = guildBotPrefix;
@@ -17,6 +24,11 @@ public class ServerModel {
         this.guildLobbyInfoChannelId = guildLobbyInfoChannelId;
     }
 
+    /**
+     * Convert ServerModel to DBObject
+     * @param serverModel ServerModel
+     * @return DBObject
+     */
     public static DBObject toDBObject(ServerModel serverModel) {
         return new BasicDBObject("guildId", serverModel.guildId)
                 .append("guildBotPrefix", serverModel.guildBotPrefix)
