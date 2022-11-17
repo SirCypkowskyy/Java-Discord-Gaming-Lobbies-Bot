@@ -184,6 +184,22 @@ public class Commands extends ListenerAdapter {
         event.getMember().getUser().openPrivateChannel().queue(
                 channel -> channel.sendMessageEmbeds(nonSlashCommands.build()).queue()
         );
+
+        var howToCreateLobbies = new EmbedBuilder()
+                .setTitle("How to create/join lobbies")
+                .setColor(Color.orange)
+                .setDescription("Here is a short guide on how to create/join lobbies")
+                .addField("1. Register the server (admin)", "Register the server to the bot (if you're the server admin) with `/register-server` command", false)
+                .addField("2. Register to bot (user)", "Create a lobby with `/create-lobby` command", false)
+                .addField("3. Create a lobby", "Create a lobby with `/create-lobby` command", false)
+                .addField("Lobby lifetime", "Lobby will be deleted after 1 minute of inactivity (empty voice channel) or by the host clicking the 'Leave lobby' button", false)
+                .addField("Who can join?", "For now, anyone can join your lobby as long as they click the appropriate button (planned features include private lobbies, adding users to your lobby by command, banning users from join your lobbies, etc.)", false)
+                .setFooter("Gaming Lobbies Bot")
+                .setThumbnail(event.getJDA().getSelfUser().getAvatarUrl())
+                .setTimestamp(Instant.now());
+        event.getMember().getUser().openPrivateChannel().queue(
+                channel -> channel.sendMessageEmbeds(howToCreateLobbies.build()).queue()
+        );
     }
 
     /**
