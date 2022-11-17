@@ -77,6 +77,12 @@ public class Main {
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MESSAGE_SEND))
         );
 
+        // help
+        commandData.add(Commands
+                .slash("help", "Get help")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MESSAGE_SEND))
+        );
+
         // register account
         commandData.add(Commands
                 .slash("register-to-bot", "Register your account to bot service")
@@ -88,6 +94,12 @@ public class Main {
                 .slash("create-lobby", "Create a new activity lobby")
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MESSAGE_SEND))
                 );
+
+        // show active lobbies
+        commandData.add(Commands
+                .slash("list-lobbies", "Show all active lobbies")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MESSAGE_SEND))
+        );
 
         // change server settings
         commandData.add(Commands

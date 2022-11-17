@@ -60,8 +60,6 @@ public class Commands extends ListenerAdapter {
         if(Main.getIsInDebugMode() && (!event.getAuthor().isBot() && !event.getAuthor().isSystem()))
             System.out.println("\nNew event:\n" + message + "\nBy: " + event.getAuthor().getName() + "\nOn guild: " + event.getGuild().getName() + " (" + event.getGuild().getId() + ")");
 
-
-        // var eventsPrefix = SQLiteDataSource.getGuildPrefix(Objects.requireNonNull(event.getGuild()).getIdLong());
         var eventsPrefix = Main.dataManager.getGuildPrefix(Objects.requireNonNull(event.getGuild()).getIdLong());
         var pattern = Pattern.compile("[" + eventsPrefix+"]\\w+" , Pattern.CASE_INSENSITIVE);
         var matcher = pattern.matcher(message);
@@ -126,7 +124,8 @@ public class Commands extends ListenerAdapter {
     @Override
     public void onSlashCommandInteraction(@NotNull SlashCommandInteractionEvent event) {
         switch (event.getName()) {
-            case "ping" -> event.reply("Pong!").setEphemeral(true).queue();
+            case "ping" -> event.reply("Pong!").setEphemeral(true).queue(message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS));
+            case "help" -> help(event);
             case "list-lobbies" -> listLobbiesOnServer(event);
             case "register-to-bot" -> registerToBot(event);
             case "create-lobby" -> createLobby(event);
@@ -139,6 +138,52 @@ public class Commands extends ListenerAdapter {
             case "remove-activity" -> removeActivity(event);
             default -> {}
         }
+    }
+
+    /**
+     * Function that handles user asking for help
+     * @param event SlashCommandInteractionEvent
+     */
+    private void help(@NotNull SlashCommandInteractionEvent event) {
+
+        event.reply("Help sent to your DMs").setEphemeral(true).queue();
+        var helpEmbed = new EmbedBuilder()
+                .setTitle("Help")
+                .setDescription("\nHi! Welcome to the Gaming Lobbies Bot!\nGaming Lobbies Bot is a Discord bot " +
+                        "written in Java to facilitate the process of creating temporary gaming lobbies on Discord " +
+                        "servers through a dedicated system.\n\nThis command lists all commands of the bot.\nList of all commands")
+                .setColor(0x00ff00)
+                .addField("`/ping`", "Message for checking if bot works properly", false)
+                .addField("`/help`", "List of all commands and introduction", false)
+                .addField("`/list-lobbies`", "List all lobbies on " + event.getGuild().getName() + " server", false)
+                .addField("`/register-to-bot`", "Register yourself to bot (required for most interactions)", false)
+                .addField("`/create-lobby`", "Create new lobby", false)
+                .addField("`/change-server-settings`", "Change server settings (admin only)", false)
+                .addField("`/unregister-from-bot`", "Unregister from bot", false)
+                .addField("`/register-server`", "Register server (required for lobbies creation)", false)
+                .addField("`/unregister-server`", "Unregister server", false)
+                .addField("`/show-server-settings`", "Show server settings", false)
+                .addField("`/add-activity`", "Adds followed activity to your profile", false)
+                .addField("`remove-activity`", "Removes activity from your profile", false)
+                .setFooter("Gaming Lobbies Bot")
+                .setThumbnail(event.getJDA().getSelfUser().getAvatarUrl())
+                .setTimestamp(Instant.now());
+        event.getMember().getUser().openPrivateChannel().queue(
+                channel -> channel.sendMessageEmbeds(helpEmbed.build()).queue()
+        );
+
+        var nonSlashCommands = new EmbedBuilder()
+                .setTitle("Non slash commands")
+                .setDescription("List of all non slash commands")
+                .setColor(0x00ff00)
+                .addField("`" + Main.dataManager.getGuildPrefix(event.getGuild().getIdLong()) + "prefix`", "Shows current prefix", false)
+                .addField("`" + Main.dataManager.getGuildPrefix(event.getGuild().getIdLong()) + "getMyActivities`", "Shows your followed activities", false)
+                .setFooter("Gaming Lobbies Bot")
+                .setThumbnail(event.getJDA().getSelfUser().getAvatarUrl())
+                .setTimestamp(Instant.now());
+        event.getMember().getUser().openPrivateChannel().queue(
+                channel -> channel.sendMessageEmbeds(nonSlashCommands.build()).queue()
+        );
     }
 
     /**
@@ -592,7 +637,7 @@ public class Commands extends ListenerAdapter {
     private void registerToBot(@NotNull SlashCommandInteractionEvent event) {
         if(Main.dataManager.doesUserExist(event.getUser().getIdLong()))
         {
-            event.reply("You are already in the database!").setEphemeral(true).queue();
+            event.reply("You are already in the database!").setEphemeral(true).queue(message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS));
             return;
         }
 
@@ -645,7 +690,7 @@ public class Commands extends ListenerAdapter {
 
         if(activity == null)
         {
-            event.reply("You don't have this activity active!").setEphemeral(true).queue();
+            event.reply("You don't have this activity active!").setEphemeral(true).queue(message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS));
             return;
         }
 
