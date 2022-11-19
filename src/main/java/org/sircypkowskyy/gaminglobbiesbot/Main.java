@@ -148,6 +148,12 @@ public class Main {
                 .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MESSAGE_SEND))
         );
 
+        // get current activities
+        commandData.add(Commands
+                .slash("get-activities", "Get your registered activities")
+                .setDefaultPermissions(DefaultMemberPermissions.enabledFor(Permission.MESSAGE_SEND))
+        );
+
         bot.updateCommands().addCommands(commandData).queue();
     }
 

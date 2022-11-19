@@ -667,7 +667,11 @@ public class Commands extends ListenerAdapter {
         var modal = Modal.create("register-to-bot", "Register your account to bot service")
                 .addActionRows(ActionRow.of(getDMs))
                 .build();
+
         event.replyModal(modal).queue();
+
+        // delete reply message after 30 seconds
+        event.getHook().deleteOriginal().queueAfter(30, TimeUnit.SECONDS);
     }
 
     /**
