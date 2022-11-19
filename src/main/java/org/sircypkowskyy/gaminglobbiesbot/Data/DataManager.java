@@ -1,18 +1,26 @@
 package org.sircypkowskyy.gaminglobbiesbot.Data;
 
 import com.mongodb.BasicDBObject;
+import com.mongodb.ConnectionString;
+import com.mongodb.MongoClientSettings;
 import com.mongodb.client.*;
 import io.github.cdimascio.dotenv.Dotenv;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import org.bson.Document;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.sircypkowskyy.gaminglobbiesbot.Data.Models.LobbyModel;
 import org.sircypkowskyy.gaminglobbiesbot.Data.Models.ServerModel;
 import org.sircypkowskyy.gaminglobbiesbot.Data.Models.UserModel;
+import org.sircypkowskyy.gaminglobbiesbot.Data.POJOs.Activity;
 import org.sircypkowskyy.gaminglobbiesbot.Main;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 /**
  * DataManager class is responsible for managing all data operations.
@@ -39,7 +47,16 @@ public class DataManager extends Thread {
      */
     private void connectClient() {
         var dotenv = Dotenv.configure().ignoreIfMissing().load();
-        mongoClient = MongoClients.create(dotenv.get("MONGO_URL", "mongodb://localhost/app"));
+        var pojoCodecRegistry = fromProviders(PojoCodecProvider.builder().automatic(true).build());
+        var codecRegistry = fromRegistries(MongoClientSettings.getDefaultCodecRegistry(),
+                pojoCodecRegistry);
+
+        var clientSettings = MongoClientSettings.builder()
+                .applyConnectionString(new ConnectionString(dotenv.get("MONGO_URL", "mongodb://localhost/app")))
+                .codecRegistry(codecRegistry)
+                .build();
+
+        mongoClient = MongoClients.create(clientSettings);
         // Check if connection is successful
         System.out.println("Connected to MongoDB!\nGetting all databases...");
     }
@@ -150,12 +167,13 @@ public class DataManager extends Thread {
     /**
      * Function responsible for registration of new user's activity to the database.
      * @param userId ID of the user.
-     * @param activityId ID of the activity.
+     * @param activity activity to be registered.
      */
-    public void registerNewUserActivity(long userId, long activityId) {
+    public void registerNewUserActivity(long userId, Activity activity) {
         var user = usersCollection.find(new BasicDBObject("userId", userId)).first();
-        var userActivities = (List<Long>) user.get("userRegisteredActivities");
-        userActivities.add(activityId);
+        assert user != null;
+        var userActivities = user.getList("userRegisteredActivities", Document.class);
+        userActivities.add(Activity.toDocument(activity));
         usersCollection.updateOne(new BasicDBObject("userId", userId), new BasicDBObject("$set", new BasicDBObject("userRegisteredActivities", userActivities)));
     }
 
@@ -166,8 +184,9 @@ public class DataManager extends Thread {
      */
     public void unregisterUserActivity(long userId, long activityId) {
         var user = usersCollection.find(new BasicDBObject("userId", userId)).first();
-        var userActivities = (List<Long>) user.get("userRegisteredActivities");
-        userActivities.remove(activityId);
+        assert user != null;
+        var userActivities = user.getList("userRegisteredActivities", Document.class);
+        userActivities.removeIf(activity -> activity.getLong("activityId") == activityId);
         usersCollection.updateOne(new BasicDBObject("userId", userId), new BasicDBObject("$set", new BasicDBObject("userRegisteredActivities", userActivities)));
     }
 
@@ -221,8 +240,9 @@ public class DataManager extends Thread {
     public boolean doesUserHaveActivity(long userID, long activityID) {
         var user = new BasicDBObject("userId", userID);
         var userExists = usersCollection.find(user).first();
-        var userActivities = (List<Long>) userExists.get("userRegisteredActivities");
-        return userActivities.contains(activityID);
+        assert userExists != null;
+        var userActivities = userExists.getList("userRegisteredActivities", Document.class);
+        return userActivities.stream().anyMatch(activity -> activity.getLong("activityId") == activityID);
     }
 
     /**
@@ -309,5 +329,12 @@ public class DataManager extends Thread {
         {
             serversCollection.replaceOne(serverExists, ServerModel.toDocument(serverModel));
         }
+    }
+
+    public List<Activity> getAllUserRegisteredActivities(long userId) {
+        var user = usersCollection.find(new BasicDBObject("userId", userId)).first();
+        assert user != null;
+        var userActivities = user.getList("userRegisteredActivities", Document.class);
+        return userActivities.stream().map(Activity::fromDocument).collect(Collectors.toList());
     }
 }

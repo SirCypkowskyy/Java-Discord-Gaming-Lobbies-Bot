@@ -67,26 +67,23 @@ public class Commands extends ListenerAdapter {
             switch (removePrefixFromStr(message, eventsPrefix)) {
                 case "prefix" -> event.getMessage().reply("Prefix is: " + eventsPrefix).queue();
                 case "getMyActivities" -> {
-                    if(Objects.requireNonNull(event.getMember()).getActivities().size() > 0) {
-                        event.getMessage().reply("Your activities are: ").queue();
-                        for (var activity : event.getMember().getActivities()) {
-                            if(activity.isRich())
-                            {
+                    var userActivities = Main.dataManager.getAllUserRegisteredActivities(event.getAuthor().getIdLong());
+                    if(userActivities != null && !userActivities.isEmpty()) {
+                        event.getMessage().reply("Check DMs from bot for your registered activities").queue();
+                        for (var activity : userActivities) {
+
                                 var embed =  new EmbedBuilder()
-                                        .setTitle(activity.getName())
-                                        .setDescription(activity.getUrl())
-                                        .setColor(0x00ff00);
+                                        .setTitle(activity.activityName)
+                                        .setDescription(activity.activityDescription)
+                                        .setColor(0x00ff00)
+                                        .setThumbnail(activity.activityIconURL);
 
-                                if(activity.asRichPresence().getLargeImage() != null)
-                                    embed.setThumbnail(activity.asRichPresence().getLargeImage().getUrl());
-
-                                event.getMessage().replyEmbeds(
-                                        embed.build()
-                                ).queue();
-                            }
+                                event.getAuthor().openPrivateChannel().queue(
+                                        (channel) -> channel.sendMessageEmbeds(embed.build()).queue()
+                                );
                         }
                     } else {
-                        event.getMessage().reply("You don't have any activity").queue();
+                        event.getMessage().reply("You don't have any registered activity").queue();
                     }
                 }
                 default -> {}
@@ -136,8 +133,29 @@ public class Commands extends ListenerAdapter {
             case "show-server-settings" -> showServerSettings(event);
             case "add-activity" -> addActivity(event);
             case "remove-activity" -> removeActivity(event);
+            case "get-activities" -> getActivities(event);
             default -> {}
         }
+    }
+
+    private void getActivities(@NotNull SlashCommandInteractionEvent event) {
+        var userActivities = Main.dataManager.getAllUserRegisteredActivities(event.getMember().getIdLong());
+        if(userActivities != null && !userActivities.isEmpty()) {
+            event.reply("Your registered activities are:").setEphemeral(true).queue();
+            for (var activity : userActivities) {
+
+                var embed =  new EmbedBuilder()
+                        .setTitle(activity.activityName)
+                        .setDescription(activity.activityDescription)
+                        .setColor(0x00ff00)
+                        .setThumbnail(activity.activityIconURL);
+
+                event.getHook().sendMessageEmbeds(embed.build()).setEphemeral(true).queue();
+            }
+        } else {
+            event.reply("You don't have any registered activity").setEphemeral(true).queue();
+        }
+
     }
 
     /**
@@ -165,6 +183,7 @@ public class Commands extends ListenerAdapter {
                 .addField("`/show-server-settings`", "Show server settings", false)
                 .addField("`/add-activity`", "Adds followed activity to your profile", false)
                 .addField("`remove-activity`", "Removes activity from your profile", false)
+                .addField("`/get-activities`", "Shows all activities you are following", false)
                 .setFooter("Gaming Lobbies Bot")
                 .setThumbnail(event.getJDA().getSelfUser().getAvatarUrl())
                 .setTimestamp(Instant.now());
@@ -281,11 +300,8 @@ public class Commands extends ListenerAdapter {
             return;
         }
         var selectMenu = SelectMenu.create("select-activity-to-remove").setRequiredRange(1, 1);
-        for (var activity : event.getMember().getActivities()) {
-            if(activity.isRich())
-            {
-                selectMenu.addOption(activity.getName(), activity.getName());
-            }
+        for (var activity : Main.dataManager.getAllUserRegisteredActivities(event.getUser().getIdLong())) {
+            selectMenu.addOption(activity.activityName, activity.activityName);
         }
         event.reply("Select activity you want to want to unfollow")
                 .addActionRow(selectMenu.build())
@@ -323,7 +339,7 @@ public class Commands extends ListenerAdapter {
         // Check if user exists in database
         if(!Main.dataManager.doesUserExist(event.getUser().getIdLong()))
         {
-            event.reply("You are not registered to bot. Use /register-to-bot to register").setEphemeral(true).queue(
+            event.reply("You are not registered to bot. Use `/register-to-bot` to register\nUse `/help` for more info").setEphemeral(true).queue(
                     message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
             );
             return;
@@ -360,7 +376,9 @@ public class Commands extends ListenerAdapter {
         var activityId = activity.asRichPresence().getApplicationIdLong();
         if(!Main.dataManager.doesUserHaveActivity(event.getUser().getIdLong(),activityId))
         {
-            Main.dataManager.registerNewUserActivity(event.getUser().getIdLong(), activityId);
+            Main.dataManager.registerNewUserActivity(event.getUser().getIdLong(),
+                    new org.sircypkowskyy.gaminglobbiesbot.Data.POJOs.Activity(activityId, activityName,
+                            activity.asRichPresence().getDetails(),getImageUrlFromActivity(activity)));
             event.reply("Activity added").setEphemeral(true).queue(
                     message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
             );
@@ -670,8 +688,6 @@ public class Commands extends ListenerAdapter {
 
         event.replyModal(modal).queue();
 
-        // delete reply message after 30 seconds
-        event.getHook().deleteOriginal().queueAfter(30, TimeUnit.SECONDS);
     }
 
     /**
@@ -720,7 +736,7 @@ public class Commands extends ListenerAdapter {
             var lobbyInfoEmbed = new EmbedBuilder()
                     .setTitle("New game lobby!")
                     .setDescription("New " + activity.getName() + " lobby has been created!")
-                    .setThumbnail(activity.asRichPresence().getLargeImage() == null ? (activity.asRichPresence().getSmallImage() == null ? botSelfAvatar : activity.asRichPresence().getSmallImage().getUrl()) : activity.asRichPresence().getLargeImage().getUrl())
+                    .setThumbnail(getImageUrlFromActivity(activity))
                     .setTimestamp(Instant.now())
                     .setAuthor(event.getMember().getUser().getAsTag(), null, event.getMember().getUser().getEffectiveAvatarUrl())
                     .addField("Lobby name", lobbyName, false)
@@ -761,7 +777,7 @@ public class Commands extends ListenerAdapter {
                     .setTitle("New " + activity.getName() +" lobby on " + event.getGuild().getName() + " server!")
                     .setDescription("New lobby has been created on " + event.getGuild().getName() + " by " + "<@" + event.getMember().getId() + ">" + "!")
                     .setColor(Color.RED)
-                    .setThumbnail(activity.asRichPresence().getLargeImage() == null ? (activity.asRichPresence().getSmallImage() == null ? botSelfAvatar : activity.asRichPresence().getSmallImage().getUrl()) : activity.asRichPresence().getLargeImage().getUrl())
+                    .setThumbnail(getImageUrlFromActivity(activity))
                     .setTimestamp(Instant.now())
                     .addField("Lobby name", lobbyName, false)
                     .addField("Activity", activity.getName(), false)
@@ -852,5 +868,18 @@ public class Commands extends ListenerAdapter {
      */
     private void registerNewLobby(LobbyModel newLobby) {
         Main.dataManager.registerNewLobby(newLobby);
+    }
+
+
+    private String getImageUrlFromActivity(Activity activity) {
+        if(activity.asRichPresence().getLargeImage() == null)
+        {
+            if(activity.asRichPresence().getSmallImage() == null)
+                return Main.getBot().getSelfUser().getEffectiveAvatarUrl();
+            else
+                return activity.asRichPresence().getSmallImage().getUrl();
+        }
+        else
+            return activity.asRichPresence().getLargeImage().getUrl();
     }
 }

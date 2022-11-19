@@ -30,6 +30,7 @@ Mongodb is used to store data, and the bot is currently hosted on a home server.
 - `/show-server-settings` - to show the server bot settings
 - `/add-activity` - to add an activity to your followed activities list
 - `/remove-activity` - to remove an activity from your followed activities list
+- `/get-activities` - to show all activities you are following
 
 ## How to run
 
