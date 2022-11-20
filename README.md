@@ -5,7 +5,7 @@
 
 ***Gaming Lobbies Bot*** is a bot written in Java, based on the JDA framework, to facilitate the process of creating temporary gaming lobbies on Discord servers through a dedicated system.
 
-Bot is currently in development, and is not yet ready for public use (**you can test him at the moment by joining one of the few selected servers where the bot is tested or by cloning and launching this repo by yourself).
+Bot is currently in development, but it is ready for partial public use (**you can test him at the moment by joining one of the few selected servers where the bot is tested or by cloning and launching this repo by yourself).
 
 Mongodb is used to store data, and the bot is currently hosted on a home server.
 
