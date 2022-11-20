@@ -110,7 +110,7 @@ public class Commands extends ListenerAdapter {
      */
     private void help(@NotNull SlashCommandInteractionEvent event) {
 
-        event.reply("Help sent to your DMs").setEphemeral(true).queue();
+        event.reply("Help sent as DMs").setEphemeral(true).queue();
         var helpEmbed = new EmbedBuilder()
                 .setTitle("Help")
                 .setDescription("\nHi! Welcome to the Gaming Lobbies Bot!\nGaming Lobbies Bot is a Discord bot " +
@@ -157,7 +157,7 @@ public class Commands extends ListenerAdapter {
                 .addField("1. Register the server (admin)", "Register the server to the bot (if you're the server admin) with `/register-server` command", false)
                 .addField("2. Register to bot (user)", "Register yourself to the bot with `/register-to-bot` command", false)
                 .addField("3. Create a lobby", "Create a lobby with `/create-lobby` command", false)
-                .addField("Lobby lifetime", "Lobby will be deleted after 1 minute of inactivity (empty voice channel) or by the host clicking the 'Leave lobby' button", false)
+                .addField("Lobby lifetime", "Lobby will be deleted after 1 minute of inactivity (empty voice channel) or by the host either clicking the 'Leave lobby' button or typing the appropriate command on the text channel of the lobby", false)
                 .addField("Who can join?", "For now, anyone can join your lobby as long as they click the appropriate button (planned features include private lobbies, adding users to your lobby by command, banning users from joining your lobbies, etc.)", false)
                 .setFooter("Gaming Lobbies Bot")
                 .setThumbnail(event.getJDA().getSelfUser().getAvatarUrl())
@@ -170,7 +170,7 @@ public class Commands extends ListenerAdapter {
     /**
      * Function that handles joining to lobby by button click
      * @param event Button interaction event
-     * @param lobbyId Id of lobby to join
+     * @param lobbyId ID of lobby to join
      */
     private void handleButtonJoinLobby(@NotNull ButtonInteractionEvent event, long lobbyId) {
         var user = event.getUser();
@@ -211,7 +211,7 @@ public class Commands extends ListenerAdapter {
     /**
      * Function that handles leaving from lobby by button click
      * @param event Button interaction event
-     * @param lobbyId Id of lobby to leave
+     * @param lobbyId ID of lobby to leave
      */
     private void handleButtonLeaveLobby(@NotNull ButtonInteractionEvent event, long lobbyId) {
         var user = event.getUser();
@@ -703,6 +703,7 @@ public class Commands extends ListenerAdapter {
 
         // available commands for lobby
         var guildPrefix = Main.dataManager.getGuildPrefix(event.getGuild().getIdLong());
+        newChannel.sendMessage("<@" + event.getMember().getIdLong()  + ">").queue();
         newChannel.sendMessageEmbeds(
                 new EmbedBuilder()
                         .setTitle("Lobby commands")

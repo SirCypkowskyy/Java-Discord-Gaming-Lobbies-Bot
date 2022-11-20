@@ -52,7 +52,7 @@ public class Main {
                         ).orElseThrow(
                                 () -> new Exception("No bot token found")
                         ))
-                .setActivity(Activity.playing("Managing Discord gaming lobbies since 1984"))
+                .setActivity(Activity.playing("Managing Discord gaming lobbies"))
                 .enableIntents(GatewayIntent.MESSAGE_CONTENT)
                 .enableIntents(GatewayIntent.GUILD_MEMBERS)
                 .enableIntents(GatewayIntent.GUILD_PRESENCES)
@@ -171,7 +171,11 @@ public class Main {
             System.out.println("Process interrupted error");
         }
         var lobbies = dataManager.getLobbies().find().into(new ArrayList<>());
-        if(lobbies.isEmpty()) return;
+        if(lobbies.isEmpty())
+        {
+            System.out.println("No lobbies found to check validity");
+            return;
+        }
 
         System.out.println("Checking lobbies validity...");
 

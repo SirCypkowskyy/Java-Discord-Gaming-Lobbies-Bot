@@ -98,6 +98,19 @@ public class EventHandlers extends ListenerAdapter {
                 (channel) -> {
                     var lobbies = Main.dataManager.getLobbies().find().into(new ArrayList<>());
                     var targetLobby = lobbies.stream().filter(lobby -> lobby.getLong("lobbyChannelId") == event.getChannel().getIdLong()).findFirst().orElse(null);
+
+                    // try find lobby info message
+                    try{
+                        event.getGuild().getTextChannelById(targetLobby.getLong("lobbyInfoMessageChannelId")).retrieveMessageById(targetLobby.getLong("lobbyInfoMessageId")).queue(
+                                (message) -> message.delete().queue()
+                        );
+
+                    }
+                    catch (Exception e) {
+                        System.out.println("Error while deleting lobby info message - info message not found");
+                    }
+
+
                     if(targetLobby != null)
                         Main.dataManager.getLobbies().deleteOne(targetLobby);
                     else
