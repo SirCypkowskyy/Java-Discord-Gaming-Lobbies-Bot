@@ -32,6 +32,8 @@ Mongodb is used to store data, and the bot is currently hosted on a home server.
 - `/remove-activity` - to remove an activity from your followed activities list
 - `/get-activities` - to show all activities you are following
 
+For more information, please type `/help` in a channel where the bot is present.
+
 ## How to run
 
 ### Docker
@@ -76,9 +78,19 @@ DEBUG_MODE=[check if you want to run the bot in debug mode]
 - Create a pull request
 - Wait for the review
 
-Alternatively, you can create an issue with a feature request or a bug report on the issues page or our Discord community server.
+Alternatively, you can create an issue with a feature request or a bug report on the issues page or post about the issue on our Discord community server.
 
-Server link: https://discord.gg/PfbF3x87js
+Community Server link: https://discord.gg/PfbF3x87js
 
 ## License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
+
+## Credits
+- [JDA](https://github.com/DV8FromTheWorld/JDA) - Java Discord API
+- [MongoDB](https://www.mongodb.com/) - Database
+- [MongoDB Java Driver](https://mongodb.github.io/mongo-java-driver/) - Java Driver for MongoDB
+- [Docker](https://www.docker.com/) - Containerization
+- [Docker Compose](https://docs.docker.com/compose/) - Container orchestration
+- [Dotenv Java](https://github.com/cdimascio/dotenv-java) - Java library for loading environment variables from .env files
+
+Special thanks to Krystian Postek [@kpostekk](https://github.com/kpostekk) for his help on the containerization of the bot and for his help with the project in general, as well as to Rafał Opiłowski [@rafalopilowski1](https://github.com/rafalopilowski1) on the initial development of the bot.

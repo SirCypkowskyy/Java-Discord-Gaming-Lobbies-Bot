@@ -22,7 +22,7 @@ public class Main {
 
     private static JDA bot;
     public static DataManager dataManager;
-    private static boolean isInDebugMode = true;
+    private static boolean isInDebugMode = false;
     public static String defaultBotPrefix;
 
     public static void main(String[] args) throws Exception {
