@@ -4,6 +4,7 @@ import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.ISnowflake;
+import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
 import net.dv8tion.jda.api.events.interaction.ModalInteractionEvent;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -35,61 +36,6 @@ import java.util.regex.Pattern;
  * Class that handles all slash and non-slash commands and different interactions
  */
 public class Commands extends ListenerAdapter {
-
-    public static String removePrefixFromStr(String s, String prefix)
-    {
-        if (s != null && prefix != null && s.startsWith(prefix)) {
-            return s.substring(prefix.length());
-        }
-        return s;
-    }
-
-    @Override
-    public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-
-        // Check if event happened outside a guild
-        try {
-            event.getGuild().getName();
-        }
-        catch (Exception e) {
-            return;
-        }
-
-        var message = event.getMessage().getContentRaw();
-
-        if(Main.getIsInDebugMode() && (!event.getAuthor().isBot() && !event.getAuthor().isSystem()))
-            System.out.println("\nNew event:\n" + message + "\nBy: " + event.getAuthor().getName() + "\nOn guild: " + event.getGuild().getName() + " (" + event.getGuild().getId() + ")");
-
-        var eventsPrefix = Main.dataManager.getGuildPrefix(Objects.requireNonNull(event.getGuild()).getIdLong());
-        var pattern = Pattern.compile("[" + eventsPrefix+"]\\w+" , Pattern.CASE_INSENSITIVE);
-        var matcher = pattern.matcher(message);
-        if(matcher.find()) {
-            switch (removePrefixFromStr(message, eventsPrefix)) {
-                case "prefix" -> event.getMessage().reply("Prefix is: " + eventsPrefix).queue();
-                case "getMyActivities" -> {
-                    var userActivities = Main.dataManager.getAllUserRegisteredActivities(event.getAuthor().getIdLong());
-                    if(userActivities != null && !userActivities.isEmpty()) {
-                        event.getMessage().reply("Check DMs from bot for your registered activities").queue();
-                        for (var activity : userActivities) {
-
-                                var embed =  new EmbedBuilder()
-                                        .setTitle(activity.activityName)
-                                        .setDescription(activity.activityDescription)
-                                        .setColor(0x00ff00)
-                                        .setThumbnail(activity.activityIconURL);
-
-                                event.getAuthor().openPrivateChannel().queue(
-                                        (channel) -> channel.sendMessageEmbeds(embed.build()).queue()
-                                );
-                        }
-                    } else {
-                        event.getMessage().reply("You don't have any registered activity").queue();
-                    }
-                }
-                default -> {}
-            }
-        }
-    }
 
     @Override
     public void onSelectMenuInteraction(@NotNull SelectMenuInteractionEvent event) {
@@ -228,24 +174,38 @@ public class Commands extends ListenerAdapter {
      */
     private void handleButtonJoinLobby(@NotNull ButtonInteractionEvent event, long lobbyId) {
         var user = event.getUser();
-        var lobby = event.getGuild().getVoiceChannelById(lobbyId);
-        // check if user is the owner of the lobby
-        var lobbyModel = Main.dataManager.getLobbies().find().into(new ArrayList<>());
-        var potentialLobby = lobbyModel.stream().filter(x -> x.getLong("lobbyChannelId") == lobbyId).findFirst().orElse(null);
-        if(potentialLobby != null && potentialLobby.getLong("lobbyUserOwnerId") == user.getIdLong()) {
-            event.reply("You are the owner of this lobby\nYou can't join your own lobby again!").setEphemeral(true).queue(
+        try {
+            var lobby = event.getGuild().getVoiceChannelById(lobbyId);
+            // check if user is the owner of the lobby
+            var lobbyModel = Main.dataManager.getLobbies().find().into(new ArrayList<>());
+            var potentialLobby = lobbyModel.stream().filter(x -> x.getLong("lobbyChannelId") == lobbyId).findFirst().orElse(null);
+            if(potentialLobby != null && potentialLobby.getLong("lobbyUserOwnerId") == user.getIdLong()) {
+                event.reply("You are the owner of this lobby\nYou can't join your own lobby again!").setEphemeral(true).queue(
+                        message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                );
+                return;
+            }
+
+            if(lobby != null) {
+                var currentPermissions = lobby.getMemberPermissionOverrides();
+                var settingsForThisUser = currentPermissions.stream().filter(x -> x.getIdLong() == user.getIdLong()).findFirst().orElse(null);
+                if(settingsForThisUser != null && settingsForThisUser.getDenied().contains(Permission.VOICE_CONNECT)) {
+                    event.reply("You cannot join this lobby because you have been banned from it by its owner").setEphemeral(true).queue(
+                            message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                    );
+                    return;
+                }
+                var lobbyManager = lobby.getManager();
+                lobbyManager.putPermissionOverride(Objects.requireNonNull(event.getMember()), EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), EnumSet.of(Permission.VOICE_MOVE_OTHERS)).queue();
+            }
+            event.reply("You have joined the lobby successfully").setEphemeral(true).queue(
                     message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
             );
-            return;
         }
-
-        if(lobby != null) {
-            var lobbyManager = lobby.getManager();
-            lobbyManager.putPermissionOverride(Objects.requireNonNull(event.getMember()), EnumSet.of(Permission.VIEW_CHANNEL, Permission.VOICE_CONNECT), EnumSet.of(Permission.VOICE_MOVE_OTHERS)).queue();
+        catch (NullPointerException e) {
+            event.reply("Lobby doesn't exist anymore!").setEphemeral(true).queue();
+            event.getMessage().delete().queue();
         }
-        event.reply("You have joined the lobby successfully").setEphemeral(true).queue(
-                message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
-        );
     }
 
     /**
@@ -275,7 +235,16 @@ public class Commands extends ListenerAdapter {
                 actionReplied = true;
             }
             else {
+                var currentPermissions = lobby.getMemberPermissionOverrides();
+                var settingsForThisUser = currentPermissions.stream().filter(x -> x.getIdLong() == user.getIdLong()).findFirst().orElse(null);
+                if(settingsForThisUser != null && settingsForThisUser.getDenied().contains(Permission.VOICE_CONNECT)) {
+                    event.reply("You cannot reset your settings for this lobby because you have been banned from it by its owner").setEphemeral(true).queue(
+                            message -> message.deleteOriginal().queueAfter(30, TimeUnit.SECONDS)
+                    );
+                    return;
+                }
                 var lobbyManager = lobby.getManager();
+
                 lobbyManager.removePermissionOverride(Objects.requireNonNull(event.getMember())).queue();
             }
 
@@ -647,6 +616,13 @@ public class Commands extends ListenerAdapter {
                 .setMaxLength(1)
                 .build();
 
+        var shouldLobbyBePublic = TextInput.create("lobby-public", "Should lobby be public (yes/no)", TextInputStyle.SHORT)
+                .setPlaceholder("yes")
+                .setRequired(true)
+                .setMaxLength(3)
+                .setMinLength(2)
+                .build();
+
         var activityId = TextInput.create("activity-id", "Activity ID (DON'T CHANGE)", TextInputStyle.SHORT)
                 .setValue(chosenActivity)
                 .build();
@@ -656,6 +632,7 @@ public class Commands extends ListenerAdapter {
                         ActionRow.of(lobbyName),
                         ActionRow.of(lobbyDescription),
                         ActionRow.of(lobbyMaxPlayers),
+                        ActionRow.of(shouldLobbyBePublic),
                         ActionRow.of(activityId)
                 )
                 .build();
@@ -681,6 +658,7 @@ public class Commands extends ListenerAdapter {
                 .setMaxLength(3)
                 .setMinLength(2)
                 .build();
+
 
         var modal = Modal.create("register-to-bot", "Register your account to bot service")
                 .addActionRows(ActionRow.of(getDMs))
@@ -708,6 +686,7 @@ public class Commands extends ListenerAdapter {
         var lobbyName = Objects.requireNonNull(event.getValue("lobby-name")).getAsString();
         var lobbyDescription = Objects.requireNonNull(event.getValue("lobby-description")).getAsString();
         var lobbyActivityId = Long.parseLong(Objects.requireNonNull(event.getValue("activity-id")).getAsString());
+        var shouldLobbyBePublic = event.getValue("lobby-public").getAsString().equals("yes");
 
         int lobbyMaxPlayers = 0;
         try {
@@ -722,6 +701,20 @@ public class Commands extends ListenerAdapter {
                 .complete();
 
 
+        // available commands for lobby
+        var guildPrefix = Main.dataManager.getGuildPrefix(event.getGuild().getIdLong());
+        newChannel.sendMessageEmbeds(
+                new EmbedBuilder()
+                        .setTitle("Lobby commands")
+                        .setDescription("Hi <@" + event.getMember().getIdLong() + ">! Welcome to your new lobby!\nPlease check available commands below for your lobby")
+                        .addField("Add user to lobby", guildPrefix + "addToLobby [@userMention]", false)
+                        .addField("Kick user from lobby", guildPrefix + "removeFromLobby [@userMention]", false)
+                        .addField("Change lobby name", guildPrefix + "changeLobbyName [newName]", false)
+                        .addField("Change lobby description", guildPrefix + "changeLobbyDescription [newDescription]", false)
+                        .addField("Delete lobby", guildPrefix + "deleteLobby", false)
+                .build()).queue();
+
+
         var activity = event.getMember().getActivities().stream().filter(a -> a.isRich() && a.asRichPresence().getApplicationIdLong() == lobbyActivityId).findFirst().orElse(null);
 
         if(activity == null)
@@ -733,38 +726,56 @@ public class Commands extends ListenerAdapter {
         var botSelfAvatar = event.getJDA().getSelfUser().getAvatarUrl();
         String messageLink = null;
         if(guildSettings.guildLobbyInfoChannelId != 0) {
-            var lobbyInfoEmbed = new EmbedBuilder()
-                    .setTitle("New game lobby!")
-                    .setDescription("New " + activity.getName() + " lobby has been created!")
-                    .setThumbnail(getImageUrlFromActivity(activity))
-                    .setTimestamp(Instant.now())
-                    .setAuthor(event.getMember().getUser().getAsTag(), null, event.getMember().getUser().getEffectiveAvatarUrl())
-                    .addField("Lobby name", lobbyName, false)
-                    .addField("Activity", activity.getName(), false)
-                    .addField("Lobby description", lobbyDescription, false)
-                    .addField("Lobby Channel", "<#" + newChannel.getId() + ">", false)
-                    .addField("Lobby Host", "<@" + event.getMember().getId() + ">", false)
-                    .addField("Max players", lobbyMaxPlayers == 0 ? "No limits" : Integer.toString(lobbyMaxPlayers), false)
-                    .setColor(Color.RED);
+
             int finalLobbyMaxPlayers = lobbyMaxPlayers;
-            event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).sendMessageEmbeds(lobbyInfoEmbed.build())
-                    .setActionRows(ActionRow.of(Button.primary("join-lobby-" + newChannel.getId(), "Join lobby")), ActionRow.of(Button.danger("leave-lobby-" + newChannel.getId(), "Leave lobby")))
-                    .queue(
-                            message -> {
-                                var newLobby = new LobbyModel(newChannel.getIdLong(),
-                                        event.getGuild().getIdLong(),
-                                        event.getMember().getIdLong(),
-                                        lobbyActivityId,
-                                        finalLobbyMaxPlayers,
-                                        new Date(),
-                                        message.getIdLong(),
-                                        event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).getIdLong()
-                                );
-                                registerNewLobby(newLobby);
-                            }
-                    );
-            messageLink = event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).getLatestMessageId();
-            messageLink = "https://discord.com/channels/" + event.getGuild().getId() + "/" + guildSettings.guildLobbyInfoChannelId + "/" + messageLink;
+            if(shouldLobbyBePublic) {
+                var lobbyInfoEmbed = new EmbedBuilder()
+                        .setTitle("New game lobby!")
+                        .setDescription("New " + activity.getName() + " lobby has been created!")
+                        .setThumbnail(getImageUrlFromActivity(activity))
+                        .setTimestamp(Instant.now())
+                        .setAuthor(event.getMember().getUser().getAsTag(), null, event.getMember().getUser().getEffectiveAvatarUrl())
+                        .addField("Lobby name", lobbyName, false)
+                        .addField("Activity", activity.getName(), false)
+                        .addField("Lobby description", lobbyDescription, false)
+                        .addField("Lobby Channel", "<#" + newChannel.getId() + ">", false)
+                        .addField("Lobby Host", "<@" + event.getMember().getId() + ">", false)
+                        .addField("Max players", lobbyMaxPlayers == 0 ? "No limits" : Integer.toString(lobbyMaxPlayers), false)
+                        .setColor(Color.RED);
+                event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).sendMessageEmbeds(lobbyInfoEmbed.build())
+                        .setActionRows(ActionRow.of(Button.primary("join-lobby-" + newChannel.getId(), "Join lobby")), ActionRow.of(Button.danger("leave-lobby-" + newChannel.getId(), "Leave lobby")))
+                        .queue(
+                                message -> {
+                                    var newLobby = new LobbyModel(newChannel.getIdLong(),
+                                            event.getGuild().getIdLong(),
+                                            event.getMember().getIdLong(),
+                                            lobbyActivityId,
+                                            finalLobbyMaxPlayers,
+                                            new Date(),
+                                            message.getIdLong(),
+                                            event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).getIdLong(),
+                                            false
+                                    );
+                                    registerNewLobby(newLobby);
+                                }
+                        );
+                messageLink = event.getGuild().getTextChannelById(guildSettings.guildLobbyInfoChannelId).getLatestMessageId();
+                messageLink = "https://discord.com/channels/" + event.getGuild().getId() + "/" + guildSettings.guildLobbyInfoChannelId + "/" + messageLink;
+            }
+            else {
+                var newLobby = new LobbyModel(newChannel.getIdLong(),
+                        event.getGuild().getIdLong(),
+                        event.getMember().getIdLong(),
+                        lobbyActivityId,
+                        finalLobbyMaxPlayers,
+                        new Date(),
+                        0,
+                        0,
+                        true
+                );
+                registerNewLobby(newLobby);
+            }
+
         }
 
         var usersOnServer = event.getGuild().getMembers();

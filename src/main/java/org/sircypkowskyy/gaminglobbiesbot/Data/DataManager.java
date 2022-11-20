@@ -337,4 +337,12 @@ public class DataManager extends Thread {
         var userActivities = user.getList("userRegisteredActivities", Document.class);
         return userActivities.stream().map(Activity::fromDocument).collect(Collectors.toList());
     }
+
+    public boolean isUserOwnerOfLobby(long userId, long lobbyId) {
+        var lobby = lobbiesCollection.find(new BasicDBObject("lobbyChannelId", lobbyId)).first();
+        if(lobby == null)
+            return false;
+
+        return lobby.getLong("lobbyUserOwnerId") == userId;
+    }
 }

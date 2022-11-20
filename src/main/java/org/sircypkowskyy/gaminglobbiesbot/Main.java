@@ -22,7 +22,7 @@ public class Main {
 
     private static JDA bot;
     public static DataManager dataManager;
-    private static boolean isInDebugMode = false;
+    private static boolean isInDebugMode = true;
     public static String defaultBotPrefix;
 
     public static void main(String[] args) throws Exception {
@@ -165,7 +165,7 @@ public class Main {
         System.out.println("Starting checking lobbies thread...");
 
         try {
-            TimeUnit.SECONDS.sleep(30);
+            Thread.sleep(30000);
         }
         catch (InterruptedException e) {
             System.out.println("Process interrupted error");
@@ -185,13 +185,14 @@ public class Main {
                     {
                         if(lobbyChannel.getMembers().isEmpty()) {
                             lobbyChannel.delete().queue();
-                            try {
-                                guild.getTextChannelById(lobby.getLong("lobbyInfoMessageChannelId")).retrieveMessageById(lobby.getLong("lobbyInfoMessageId")).queue(x -> {
-                                    x.delete().queue();
-                                });
-                            }
-                            catch (Exception ignored) {
-                                System.out.println("Info message not found!");
+                            if(!lobby.getBoolean("lobbyIsPrivate")) {
+                                try {
+                                    guild.getTextChannelById(lobby.getLong("lobbyInfoMessageChannelId")).retrieveMessageById(lobby.getLong("lobbyInfoMessageId")).queue(x -> {
+                                        x.delete().queue();
+                                    });
+                                } catch (Exception ignored) {
+                                    System.out.println("Info message not found!");
+                                }
                             }
                             dataManager.getLobbies().deleteOne(lobby);
                         }

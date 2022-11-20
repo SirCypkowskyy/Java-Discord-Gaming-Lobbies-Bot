@@ -19,6 +19,8 @@ public class LobbyModel {
     public long lobbyInfoMessageId;
     public long lobbyInfoMessageChannelId;
 
+    public boolean lobbyIsPrivate;
+
     /**
      * Model for a lobby.
      * @param lobbyChannelId The voice channel ID of the lobby.
@@ -29,8 +31,9 @@ public class LobbyModel {
      * @param lobbyCreated The date the lobby was created.
      * @param lobbyInfoMessageId The message ID of the lobby info message.
      * @param lobbyInfoMessageChannelId The channel ID of the lobby info message.
+     * @param lobbyIsPrivate Whether the lobby is private.
      */
-    public LobbyModel(long lobbyChannelId, long lobbyGuildId, long lobbyUserOwnerId, long lobbyActivityId, int lobbyMaxPlayers, Date lobbyCreated, long lobbyInfoMessageId, long lobbyInfoMessageChannelId) {
+    public LobbyModel(long lobbyChannelId, long lobbyGuildId, long lobbyUserOwnerId, long lobbyActivityId, int lobbyMaxPlayers, Date lobbyCreated, long lobbyInfoMessageId, long lobbyInfoMessageChannelId, boolean lobbyIsPrivate) {
         this.lobbyChannelId = lobbyChannelId;
         this.lobbyGuildId = lobbyGuildId;
         this.lobbyUserOwnerId = lobbyUserOwnerId;
@@ -39,6 +42,7 @@ public class LobbyModel {
         this.lobbyCreated = lobbyCreated;
         this.lobbyInfoMessageId = lobbyInfoMessageId;
         this.lobbyInfoMessageChannelId = lobbyInfoMessageChannelId;
+        this.lobbyIsPrivate = lobbyIsPrivate;
     }
 
     /**
@@ -54,7 +58,8 @@ public class LobbyModel {
                 .append("lobbyMaxPlayers", lobbyModel.lobbyMaxPlayers)
                 .append("lobbyCreated", lobbyModel.lobbyCreated)
                 .append("lobbyInfoMessageId", lobbyModel.lobbyInfoMessageId)
-                .append("lobbyInfoMessageChannelId", lobbyModel.lobbyInfoMessageChannelId);
+                .append("lobbyInfoMessageChannelId", lobbyModel.lobbyInfoMessageChannelId)
+                .append("lobbyIsPrivate", lobbyModel.lobbyIsPrivate);
     }
 
     /**
@@ -70,7 +75,8 @@ public class LobbyModel {
                 .append("lobbyMaxPlayers", lobbyModel.lobbyMaxPlayers)
                 .append("lobbyCreated", lobbyModel.lobbyCreated)
                 .append("lobbyInfoMessageId", lobbyModel.lobbyInfoMessageId)
-                .append("lobbyInfoMessageChannelId", lobbyModel.lobbyInfoMessageChannelId);
+                .append("lobbyInfoMessageChannelId", lobbyModel.lobbyInfoMessageChannelId)
+                .append("lobbyIsPrivate", lobbyModel.lobbyIsPrivate);
     }
 
     /**
@@ -87,7 +93,8 @@ public class LobbyModel {
                 document.getInteger("lobbyMaxPlayers"),
                 document.getDate("lobbyCreated"),
                 document.getLong("lobbyInfoMessageId"),
-                document.getLong("lobbyInfoMessageChannelId")
+                document.getLong("lobbyInfoMessageChannelId"),
+                document.getBoolean("lobbyIsPrivate")
         );
     }
 }
